@@ -155,5 +155,5 @@ def main():
     for line in score:
         print(line)
 
-if __name__ == "__main__":
+if __name__ == "engraver":
     main()

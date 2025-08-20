@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "engraver"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
     { name="Ryan Luttrull", email="reluttrull@gmail.com" },
 ]
@@ -24,4 +24,4 @@ packages = ["src"]
 Homepage = "https://github.com/reluttrull/engraver"
 
 [project.scripts]
-engraver = "src.__main__:main"
+engraver = "src.engraver:main"
