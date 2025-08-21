@@ -1,9 +1,28 @@
 import sys
 import os 
 
-def addobjectat(score, x, y, nh):
-    score[y] = score[y][:x] + nh + score[y][x+1:]
+def addobjectat(score, x, y, obj):
+    score[y] = score[y][:x] + obj + score[y][x+1:]
     return score
+
+def addrestat(score, x, dur):
+    # eighth and quarter note rests above middle line
+    if dur == "8n":
+        obj = "𝄾"
+        y = 4
+    elif dur == "4n":
+        obj = "𝄽"
+        y = 4
+    # half rests on middle line
+    elif dur == "2n": 
+        obj = "𝄼"
+        y = 5
+    # whole notes below middle line
+    elif dur == "1n":
+        obj = "𝄻"
+        y = 6
+    else: return
+    return addobjectat(score, x, y, obj)
 
 def addstemfornoteat(score, x, y):
     step = 0
@@ -130,6 +149,7 @@ def main():
     for line in score:
         print(line)
     next = ""
+    durations = ["8n", "4n", "2n", "1n"]
     treblenotes = ["g5", "f5", "e5", "d5", "c5", "b4", "a4", "g4", "f4", "e4", "d4"]
     bassnotes = ["b3", "a3", "g3", "f3", "e3", "d3", "c3", "b2", "a2", "g2", "f2"]
     notebuffer = 2
@@ -138,6 +158,7 @@ def main():
         notes = treblenotes
     elif clef == "bass":
         notes = bassnotes
+    # object add section - loops until bars are full or user quit
     while next != "q" and xpointer < len(score[0]):
         next = input("Add object? (e.g. g4 8n) q to quit: ")
         nextls = next.split()
@@ -159,7 +180,15 @@ def main():
                 score = addflagfornoteat(score, xpointer, notes.index(nextls[0]))
             spacingmult = 8 // int(nextls[1][0])
             xpointer += notewidth * spacingmult
-        elif nextls[0] in symbols:
+        elif nextls[0] == "r": # contains rest info
+            if len(nextls) < 2 or nextls[1] not in durations:
+                print("rest needs duration, try again")
+                continue
+            else:
+                score = addrestat(score, xpointer, nextls[1])
+                spacingmult = 8 // int(nextls[1][0])
+                xpointer += notewidth * spacingmult
+        elif nextls[0] in symbols: # contains accidental info
             if len(nextls) < 2 or nextls[1] not in notes:
                 print("accidental needs pitch, try again")
                 continue
@@ -170,6 +199,6 @@ def main():
             continue
     for line in score:
         print(line)
-main() # for debugging
+# main() # for debugging
 if __name__ == "engraver":
     main()
