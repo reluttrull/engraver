@@ -1,7 +1,6 @@
 import sys
 import os 
 
-
 def addnoteheadat(score, x, y, nh):
     score[y] = score[y][:x] + nh + score[y][x+1:]
     return score
@@ -35,25 +34,29 @@ def main():
     treble = ["           ^        ", "|----------%+-------", "|         +:+       ", "|----------+#-------", "|        =@*        ", "|-------%#**--------", "|      ++:##*%)     ", "|------(*:=-:-+-----", "|        -==*:      ", "|--------:=.=-------", "        #*:+        "]
     bass = ["                    ", "--------------------", "     @@@@@@@  @     ", "----@@@@--@@@@@@----", "     @@@@ @@@@@     ", "----------@@@@@@----", "         @@@        ", "-------@@@----------", "    @@@             ", "--------------------", "                    "]
     clefwidth = len(treble[0])
-    clef = input("Which clef? (treble or bass): ")
-    if clef == "treble":
-        myclef = treble
-    elif clef == "bass":
-        myclef = bass
-    else:
-        sys.exit("not a valid clef")
+    myclef = None
+    while myclef == None:     
+        clef = input("Which clef? (treble or bass, q to quit): ")
+        if clef == "treble":
+            myclef = treble
+        elif clef == "bass":
+            myclef = bass
+        elif clef == "q":
+            sys.exit()
 
     # time signature
     threefour = ["    XXXX    ", "--------X---", "     XXX    ", "--------X---", "    XXXX    ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
     fourfour = ["        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
     timesigwidth = len(threefour[0])
-    timesig = input("Which time signature? (4/4 or 3/4): ")
-    if timesig == "4/4":
-        mytimesig = fourfour
-    elif timesig == "3/4":
-        mytimesig = threefour
-    else:
-        sys.exit("not a valid time signature")
+    mytimesig = None
+    while mytimesig == None:
+        timesig = input("Which time signature? (4/4 or 3/4, q to quit): ")
+        if timesig == "4/4":
+            mytimesig = fourfour
+        elif timesig == "3/4":
+            mytimesig = threefour
+        elif timesig == "q":
+            sys.exit()
         
     # key signature
     symbols = {
@@ -83,15 +86,17 @@ def main():
         "F#":6,
         "C#":7
     }
-    keysig = input("Which key signature? (e.g. Eb): ")
-    if keysig in flatkeys:
-        myflats = (flatindicestreble if clef == "treble" else flatindicesbass)[0:flatkeys[keysig]] 
-        keysigwidth = len(myflats) * 3
-    elif keysig in sharpkeys:
-        mysharps = (sharpindicestreble if clef == "treble" else sharpindicesbass)[0:sharpkeys[keysig]]
-        keysigwidth = len(mysharps) * 3
-    else:
-        sys.exit("not a valid key signature")
+    keysigwidth = 0
+    while keysigwidth == 0:
+        keysig = input("Which key signature? (e.g. Eb, q to quit): ")
+        if keysig in flatkeys:
+            myflats = (flatindicestreble if clef == "treble" else flatindicesbass)[0:flatkeys[keysig]] 
+            keysigwidth = len(myflats) * 3
+        elif keysig in sharpkeys:
+            mysharps = (sharpindicestreble if clef == "treble" else sharpindicesbass)[0:sharpkeys[keysig]]
+            keysigwidth = len(mysharps) * 3
+        elif keysig == "q":
+            sys.exit()
     ksspaces = " " * keysigwidth
     kslines = "-" * keysigwidth
     mykeysig = [ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces]
@@ -109,12 +114,17 @@ def main():
     notewidth = 8
     slotsperbar = int(timesig[0]) * 2 # for now, number of eighth notes per bar
     barwidth = notewidth * slotsperbar
-    bars = int(input("How many bars?: "))
+    bars = 0
+    while bars == 0:
+        barinput = input("How many bars? (e.g. 2, q to quit): ")
+        if barinput == "q":
+            sys.exit()
+        elif barinput.isdigit() and int(barinput) > 0:
+            bars = int(barinput)
     outsidespaces = ((" " * (barwidth-1) + " ") * bars) + "\r" 
     spaces = ((" " * (barwidth-1) + "|") * bars) + "\r" 
     lines = (("-" * (barwidth-1) + "|") * bars) + "\r"
     score = [outsidespaces, lines, spaces, lines, spaces, lines, spaces, lines, spaces, lines, outsidespaces]
-
     score = [a + b + c + d for a, b, c, d in zip(myclef, mytimesig, mykeysig, score)]
 
     for line in score:
@@ -134,7 +144,8 @@ def main():
         spacingmult = 1
         if nextls[0] in notes: # contains note info
             if len(nextls) < 2:
-                sys.exit("No duration info")
+                print("No duration info, try again")
+                continue
             if nextls[1] in ["4n", "8n"]:
                 notehead = "●"
             elif nextls[1] == "2n":
@@ -149,11 +160,16 @@ def main():
             spacingmult = 8 // int(nextls[1][0])
             xpointer += notewidth * spacingmult
         elif nextls[0] in symbols:
-            if nextls[1] not in notes:
-                sys.exit("accidental needs pitch")
-            score = addnoteheadat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
+            if len(nextls) < 2 or nextls[1] not in notes:
+                print("accidental needs pitch, try again")
+                continue
+            else:
+                score = addnoteheadat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
+        else:
+            print("input not valid, double-check and try again")
+            continue
     for line in score:
         print(line)
-
+# main() # for debugging
 if __name__ == "engraver":
     main()
