@@ -5,6 +5,14 @@ def addobjectat(score, x, y, obj):
     score[y] = score[y][:x] + obj + score[y][x+1:]
     return score
 
+def clearobjectat(score, x, w):
+    for y in range(len(score)):
+        replacement = ""
+        if y % 2 == 0: replacement = " " * w
+        else: replacement = "-" * w
+        score[y] = score[y][:x] + replacement + score[y][x+w+1:]
+    return score
+
 def addrestat(score, x, dur):
     # eighth and quarter note rests above middle line
     if dur == "8n":
@@ -78,33 +86,13 @@ def main():
             sys.exit()
         
     # key signature
-    symbols = {
-    "s": "♯",
-    "f": "♭",
-    "n": "♮"
-    }
+    symbols = { "s": "♯", "f": "♭", "n": "♮" }
     flatindicestreble = [5, 2, 6, 3, 7, 4, 8]
     flatindicesbass = [7, 4, 8, 5, 2, 6, 3]
     sharpindicestreble = [1, 4, 0, 3, 6, 2, 5]
     sharpindicesbass = [3, 6, 2, 5, 1, 4, 7]
-    flatkeys = {
-        "F":1,
-        "Bb":2,
-        "Eb":3,
-        "Ab":4,
-        "Db":5,
-        "Gb":6,
-        "Cb":7
-    }
-    sharpkeys = {
-        "G":1,
-        "D":2,
-        "A":3,
-        "E":4,
-        "B":5,
-        "F#":6,
-        "C#":7
-    }
+    flatkeys = { "F":1, "Bb":2, "Eb":3, "Ab":4, "Db":5, "Gb":6, "Cb":7 }
+    sharpkeys = { "G":1, "D":2, "A":3, "E":4, "B":5, "F#":6, "C#":7 }
     keysigwidth = 0
     while keysigwidth == 0:
         keysig = input("Which key signature? (e.g. Eb, q to quit): ")
@@ -158,6 +146,8 @@ def main():
         notes = treblenotes
     elif clef == "bass":
         notes = bassnotes
+    
+    commandstack = []
     # object add section - loops until bars are full or user quit
     while next != "q" and xpointer < len(score[0]):
         next = input("Add object? (e.g. g4 8n) q to quit: ")
@@ -178,6 +168,8 @@ def main():
                 score = addstemfornoteat(score, xpointer, notes.index(nextls[0]))
             if nextls[1] == "8n":
                 score = addflagfornoteat(score, xpointer, notes.index(nextls[0]))
+            # add command and x location to stack for every valid command
+            commandstack.append([x for x in nextls]+[xpointer]) 
             spacingmult = 8 // int(nextls[1][0])
             xpointer += notewidth * spacingmult
         elif nextls[0] == "r": # contains rest info
@@ -186,6 +178,8 @@ def main():
                 continue
             else:
                 score = addrestat(score, xpointer, nextls[1])
+                # add command and x location to stack for every valid command
+                commandstack.append([x for x in nextls]+[xpointer]) 
                 spacingmult = 8 // int(nextls[1][0])
                 xpointer += notewidth * spacingmult
         elif nextls[0] in symbols: # contains accidental info
@@ -194,11 +188,21 @@ def main():
                 continue
             else:
                 score = addobjectat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
+                # add command and x location to stack for every valid command
+                commandstack.append([x for x in nextls]+[xpointer]) 
+        elif nextls[0] == "d": # delete last object added
+            lastcommand = commandstack.pop()
+            xpointer = lastcommand[-1]
+            commandhead = lastcommand[0]
+            deleteatx = xpointer
+            if commandhead in ["s", "f", "n"]: deleteatx -= 2
+            score = clearobjectat(score, deleteatx, notewidth)
         else:
             print("input not valid, double-check and try again")
             continue
     for line in score:
         print(line)
+    # print(commandstack) # for debugging
 # main() # for debugging
 if __name__ == "engraver":
     main()
