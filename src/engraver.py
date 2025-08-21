@@ -1,11 +1,11 @@
 import sys
 import os 
 
-def addnoteheadat(score, x, y, nh):
+def addobjectat(score, x, y, nh):
     score[y] = score[y][:x] + nh + score[y][x+1:]
     return score
 
-def addstemat(score, x, y):
+def addstemfornoteat(score, x, y):
     step = 0
     if y < 5: # stem down
         step = 1
@@ -16,7 +16,7 @@ def addstemat(score, x, y):
         score[thisline] = score[thisline][:x+1] + "|" + score[thisline][x+2:]
     return score
         
-def addflagat(score, x, y):
+def addflagfornoteat(score, x, y):
     step = 0
     dir = 0
     flag = "╮"
@@ -103,11 +103,11 @@ def main():
     kspointer = 1
     if keysig in flatkeys:
         for i in myflats:
-            mykeysig = addnoteheadat(mykeysig, kspointer, i, symbols["f"])
+            mykeysig = addobjectat(mykeysig, kspointer, i, symbols["f"])
             kspointer += 3
     elif keysig in sharpkeys:
         for i in mysharps:
-            mykeysig = addnoteheadat(mykeysig, kspointer, i, symbols["s"])
+            mykeysig = addobjectat(mykeysig, kspointer, i, symbols["s"])
             kspointer += 3
 
     # base score lines
@@ -139,7 +139,7 @@ def main():
     elif clef == "bass":
         notes = bassnotes
     while next != "q" and xpointer < len(score[0]):
-        next = input("Add object? (e.g. g4 8n) q for quit: ")
+        next = input("Add object? (e.g. g4 8n) q to quit: ")
         nextls = next.split()
         spacingmult = 1
         if nextls[0] in notes: # contains note info
@@ -152,11 +152,11 @@ def main():
                 notehead = "○"
             elif nextls[1] == "1n":
                 notehead = "🞇"
-            score = addnoteheadat(score, xpointer, notes.index(nextls[0]), notehead)
+            score = addobjectat(score, xpointer, notes.index(nextls[0]), notehead)
             if nextls[1] in ["8n", "4n", "2n"]:
-                score = addstemat(score, xpointer, notes.index(nextls[0]))
+                score = addstemfornoteat(score, xpointer, notes.index(nextls[0]))
             if nextls[1] == "8n":
-                score = addflagat(score, xpointer, notes.index(nextls[0]))
+                score = addflagfornoteat(score, xpointer, notes.index(nextls[0]))
             spacingmult = 8 // int(nextls[1][0])
             xpointer += notewidth * spacingmult
         elif nextls[0] in symbols:
@@ -164,12 +164,12 @@ def main():
                 print("accidental needs pitch, try again")
                 continue
             else:
-                score = addnoteheadat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
+                score = addobjectat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
         else:
             print("input not valid, double-check and try again")
             continue
     for line in score:
         print(line)
-# main() # for debugging
+main() # for debugging
 if __name__ == "engraver":
     main()
