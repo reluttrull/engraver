@@ -1,5 +1,6 @@
 import sys
 import os 
+import importlib.metadata
 
 def addobjectat(score, x, y, obj):
     score[y] = score[y][:x] + obj + score[y][x+1:]
@@ -78,19 +79,39 @@ def addflagfornoteat(score, x, y):
     return score
 
 def main():
+    # sys.argv = ["engraver", "--version"] # for debugging
+    clef = None 
+    timesig = None
+    keysig = None
+    barinput = None
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ["-h", "--help"]: # show help screen
+            sys.exit("engraver: the basic CL sheet music engraving tool nobody asked for\n\nUsage:\n    engraver new (treble|bass) (4/4|3/4) (C|F|Bb|Eb|Ab|Db|Gb|Cb|G|D|A|E|B|F#|C#) <number_of_bars>\n	engraver new\n	engraver -h | --help\n	engraver --version\n\nOptions:\n	-h --help      Show this screen.\n	--version      Show version.\n\nAdding objects:\n    Notes:\n		<pitch> <duration> [.]\n    Rests:\n        r <duration> [.]\n    Accidentals:\n        (f|s|n) <pitch>\n\nTreble clef pitches = d4|e4|f4|g4|a4|b4|c5|d5|e5|f5|g5\nBass clef pitches = f2|g2|a2|b2|c3|d3|e3|f3|g3|a3|b3\nDurations: 1n|2n|4n|8n")
+        elif sys.argv[1] == "--version":
+            sys.exit(importlib.metadata.version("engraver"))
+        elif len(sys.argv) < 6:
+            sys.exit("Not enough arguments.  engraver -h for more information.")
+        else:
+            clef = sys.argv[2]
+            timesig = sys.argv[3]
+            keysig = sys.argv[4]
+            barinput = sys.argv[5]
     # clef
     treble = ["           ^        ", "|----------%+-------", "|         +:+       ", "|----------+#-------", "|        =@*        ", "|-------%#**--------", "|      ++:##*%)     ", "|------(*:=-:-+-----", "|        -==*:      ", "|--------:=.=-------", "        #*:+        "]
     bass = ["                    ", "--------------------", "     @@@@@@@  @     ", "----@@@@--@@@@@@----", "     @@@@ @@@@@     ", "----------@@@@@@----", "         @@@        ", "-------@@@----------", "    @@@             ", "--------------------", "                    "]
     clefwidth = len(treble[0])
     myclef = None
     while myclef == None:     
-        clef = input("Which clef? (treble or bass, q to quit): ")
+        if not clef:
+            clef = input("Which clef? (treble or bass, q to quit): ")
         if clef == "treble":
             myclef = treble
         elif clef == "bass":
             myclef = bass
         elif clef == "q":
             sys.exit()
+        else:
+            clef = None # bad input, make sure we ask again
 
     # time signature
     threefour = ["    XXXX    ", "--------X---", "     XXX    ", "--------X---", "    XXXX    ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
@@ -98,13 +119,16 @@ def main():
     timesigwidth = len(threefour[0])
     mytimesig = None
     while mytimesig == None:
-        timesig = input("Which time signature? (4/4 or 3/4, q to quit): ")
+        if not timesig: 
+            timesig = input("Which time signature? (4/4 or 3/4, q to quit): ")
         if timesig == "4/4":
             mytimesig = fourfour
         elif timesig == "3/4":
             mytimesig = threefour
         elif timesig == "q":
             sys.exit()
+        else:
+            timesig = None # bad input, make sure we ask again
         
     # key signature
     symbols = { "s": "♯", "f": "♭", "n": "♮" }
@@ -116,15 +140,20 @@ def main():
     sharpkeys = { "G":1, "D":2, "A":3, "E":4, "B":5, "F#":6, "C#":7 }
     keysigwidth = 0
     while keysigwidth == 0:
-        keysig = input("Which key signature? (e.g. Eb, q to quit): ")
+        if not keysig:
+            keysig = input("Which key signature? (e.g. Eb, q to quit): ")
         if keysig in flatkeys:
             myflats = (flatindicestreble if clef == "treble" else flatindicesbass)[0:flatkeys[keysig]] 
             keysigwidth = len(myflats) * 3
         elif keysig in sharpkeys:
             mysharps = (sharpindicestreble if clef == "treble" else sharpindicesbass)[0:sharpkeys[keysig]]
             keysigwidth = len(mysharps) * 3
+        elif keysig == "C":
+            keysigwidth = 1
         elif keysig == "q":
             sys.exit()
+        else:
+            keysig = None # bad input, make sure we ask again
     ksspaces = " " * keysigwidth
     kslines = "-" * keysigwidth
     mykeysig = [ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces]
@@ -144,11 +173,14 @@ def main():
     barwidth = notewidth * slotsperbar
     bars = 0
     while bars == 0:
-        barinput = input("How many bars? (e.g. 2, q to quit): ")
+        if not barinput:
+            barinput = input("How many bars? (e.g. 2, q to quit): ")
         if barinput == "q":
             sys.exit()
         elif barinput.isdigit() and int(barinput) > 0:
             bars = int(barinput)
+        else:
+            barinput = None # bad input, make sure we ask again
     outsidespaces = ((" " * (barwidth-1) + " ") * bars) + "\r" 
     spaces = ((" " * (barwidth-1) + "|") * bars) + "\r" 
     lines = (("-" * (barwidth-1) + "|") * bars) + "\r"
@@ -215,7 +247,7 @@ def main():
             continue
     for line in score:
         print(line)
-    print(commandstack) # for debugging
-main() # for debugging
+    # print(commandstack) # for debugging
+# main() # for debugging
 if __name__ == "engraver":
     main()
