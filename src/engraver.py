@@ -11,7 +11,7 @@ def clearobjectat(score, x, w):
         replacement = ""
         if y % 2 == 0: replacement = " " * w
         else: replacement = "-" * w
-        score[y] = score[y][:x] + replacement + score[y][x+w+1:]
+        score[y] = score[y][:x] + replacement + score[y][x+w:]
     return score
 
 def addnoteat(score, x, y, dur, hasdot):
@@ -193,8 +193,7 @@ def main():
     durations = ["8n", "4n", "2n", "1n"]
     treblenotes = ["g5", "f5", "e5", "d5", "c5", "b4", "a4", "g4", "f4", "e4", "d4"]
     bassnotes = ["b3", "a3", "g3", "f3", "e3", "d3", "c3", "b2", "a2", "g2", "f2"]
-    notebuffer = 2
-    xpointer = clefwidth + timesigwidth + keysigwidth + notebuffer
+    xpointer = clefwidth + timesigwidth + keysigwidth + 2
     if clef == "treble":
         notes = treblenotes
     elif clef == "bass":
@@ -245,8 +244,10 @@ def main():
         else:
             print("input not valid, double-check and try again")
             continue
-    for line in score:
-        print(line)
+        os.system('cls' if os.name == 'nt' else 'clear')
+        for line in score:
+            print(line)
+    sys.exit()
     # print(commandstack) # for debugging
 # main() # for debugging
 if __name__ == "engraver":
