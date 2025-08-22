@@ -13,7 +13,25 @@ def clearobjectat(score, x, w):
         score[y] = score[y][:x] + replacement + score[y][x+w+1:]
     return score
 
-def addrestat(score, x, dur):
+def addnoteat(score, x, y, dur, hasdot):
+    if dur in ["4n", "8n"]:
+        notehead = "●"
+    elif dur == "2n":
+        notehead = "○"
+    elif dur == "1n":
+        notehead = "🞇"
+    score = addobjectat(score, x, y, notehead)
+    # stems
+    if dur in ["8n", "4n", "2n"]:
+        score = addstemfornoteat(score, x, y)
+    # flags
+    if dur == "8n":
+        score = addflagfornoteat(score, x, y)
+    if hasdot: # dotted note
+        score = addobjectat(score, x+1, y, ".")
+    return score
+
+def addrestat(score, x, dur, hasdot):
     # eighth and quarter note rests above middle line
     if dur == "8n":
         obj = "𝄾"
@@ -30,7 +48,10 @@ def addrestat(score, x, dur):
         obj = "𝄻"
         y = 6
     else: return
-    return addobjectat(score, x, y, obj)
+    score = addobjectat(score, x, y, obj)
+    if hasdot: return addobjectat(score, x+1, y, ".")
+    else: return score
+    
 
 def addstemfornoteat(score, x, y):
     step = 0
@@ -153,34 +174,27 @@ def main():
         next = input("Add object? (e.g. g4 8n) q to quit: ")
         nextls = next.split()
         spacingmult = 1
+        dotspace = False
         if nextls[0] in notes: # contains note info
             if len(nextls) < 2:
                 print("No duration info, try again")
                 continue
-            if nextls[1] in ["4n", "8n"]:
-                notehead = "●"
-            elif nextls[1] == "2n":
-                notehead = "○"
-            elif nextls[1] == "1n":
-                notehead = "🞇"
-            score = addobjectat(score, xpointer, notes.index(nextls[0]), notehead)
-            if nextls[1] in ["8n", "4n", "2n"]:
-                score = addstemfornoteat(score, xpointer, notes.index(nextls[0]))
-            if nextls[1] == "8n":
-                score = addflagfornoteat(score, xpointer, notes.index(nextls[0]))
-            # add command and x location to stack for every valid command
-            commandstack.append([x for x in nextls]+[xpointer]) 
-            spacingmult = 8 // int(nextls[1][0])
+            if len(nextls) > 2 and nextls[2] == ".": # dotted note
+                dotspace = True
+            score = addnoteat(score, xpointer, notes.index(nextls[0]), nextls[1], dotspace)
+            commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
+            spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
             xpointer += notewidth * spacingmult
         elif nextls[0] == "r": # contains rest info
             if len(nextls) < 2 or nextls[1] not in durations:
                 print("rest needs duration, try again")
                 continue
             else:
-                score = addrestat(score, xpointer, nextls[1])
-                # add command and x location to stack for every valid command
-                commandstack.append([x for x in nextls]+[xpointer]) 
-                spacingmult = 8 // int(nextls[1][0])
+                if len(nextls) > 2 and nextls[2] == ".": # dotted rest
+                    dotspace = True
+                score = addrestat(score, xpointer, nextls[1], dotspace)
+                commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
+                spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
                 xpointer += notewidth * spacingmult
         elif nextls[0] in symbols: # contains accidental info
             if len(nextls) < 2 or nextls[1] not in notes:
@@ -188,8 +202,7 @@ def main():
                 continue
             else:
                 score = addobjectat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
-                # add command and x location to stack for every valid command
-                commandstack.append([x for x in nextls]+[xpointer]) 
+                commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
         elif nextls[0] == "d": # delete last object added
             lastcommand = commandstack.pop()
             xpointer = lastcommand[-1]
@@ -202,7 +215,7 @@ def main():
             continue
     for line in score:
         print(line)
-    # print(commandstack) # for debugging
-# main() # for debugging
+    print(commandstack) # for debugging
+main() # for debugging
 if __name__ == "engraver":
     main()
