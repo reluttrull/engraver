@@ -2,39 +2,29 @@ Still in active development!
 
 Current package at: https://test.pypi.org/project/engraver/
 
+![engraver](https://github.com/user-attachments/assets/53b32a26-97e0-4b5e-bfea-aa7dae733cf7)
 ```
->engraver
-Which clef? (treble or bass, q to quit): bass
-Which time signature? (4/4 or 3/4, q to quit): 4/4
-Which key signature? (e.g. Eb, q to quit): Bb
-How many bars? (q to quit): 1
-                            X
---------------------------X-X------------------------------------------------------------------------|
-     @@@@@@@  @         XXXXXX                                                                       |
-----@@@@--@@@@@@------------X------------------------------------------------------------------------|
-     @@@@ @@@@@             X       ♭                                                                |
-----------@@@@@@-------------------------------------------------------------------------------------|
-         @@@                X                                                                        |
--------@@@----------------X-X----♭-------------------------------------------------------------------|
-    @@@                 XXXXXX                                                                       |
-----------------------------X------------------------------------------------------------------------|
-                            X
-Add object? (e.g. g4 8n) q to quit: c3 8n
-Add object? (e.g. g4 8n) q to quit: d3 8n
-Add object? (e.g. g4 8n) q to quit: e3 8n
-Add object? (e.g. g4 8n) q to quit: f3 8n
-Add object? (e.g. g4 8n) q to quit: d3 4n
-Add object? (e.g. g4 8n) q to quit: b2 8n
-Add object? (e.g. g4 8n) q to quit: c3 8n
-                            X
---------------------------X-X------------------------------------------------------------------------|
-     @@@@@@@  @         XXXXXX                   |╮                      |                           |
-----@@@@--@@@@@@------------X------------|╮------|--------------●--------|-----------------------|╮--|
-     @@@@ @@@@@             X       ♭    |       |      ●        |       |               |╮      |   |
-----------@@@@@@-------------------------|------●--------|-------|------●----------------|-------|---|
-         @@@                X           ●                |      ╮|                       |      ●    |
--------@@@----------------X-X----♭----------------------╮|------------------------------●------------|
-    @@@                 XXXXXX                                                                       |
-----------------------------X------------------------------------------------------------------------|
-                            X
+engraver: the basic CL sheet music engraving tool nobody asked for
+
+Usage:
+    engraver new (treble|bass) (4/4|3/4|2/4|12/8|9/8|6/8|3/8) (C|F|Bb|Eb|Ab|Db|Gb|Cb|G|D|A|E|B|F#|C#) <number_of_bars>
+    engraver new
+    engraver -h | --help
+    engraver --version
+
+Options:
+    -h --help      Show this screen.
+    --version      Show version.
+
+Adding objects:
+    Notes:
+        <pitch> <duration> [.]
+    Rests:
+        r <duration> [.]
+    Accidentals:
+        (f|s|n) <pitch>
+
+Treble clef pitches: d4|e4|f4|g4|a4|b4|c5|d5|e5|f5|g5
+Bass clef pitches: f2|g2|a2|b2|c3|d3|e3|f3|g3|a3|b3
+Durations: 1n|2n|4n|8n
 ```
