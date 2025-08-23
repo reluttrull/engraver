@@ -86,7 +86,7 @@ def main():
     barinput = None
     if len(sys.argv) > 1:
         if sys.argv[1] in ["-h", "--help"]: # show help screen
-            sys.exit("engraver: the basic CL sheet music engraving tool nobody asked for\n\nUsage:\n    engraver new (treble|bass) (4/4|3/4) (C|F|Bb|Eb|Ab|Db|Gb|Cb|G|D|A|E|B|F#|C#) <number_of_bars>\n    engraver new\n    engraver -h | --help\n    engraver --version\n\nOptions:\n    -h --help      Show this screen.\n    --version      Show version.\n\nAdding objects:\n    Notes:\n        <pitch> <duration> [.]\n    Rests:\n        r <duration> [.]\n    Accidentals:\n        (f|s|n) <pitch>\n\nTreble clef pitches: d4|e4|f4|g4|a4|b4|c5|d5|e5|f5|g5\nBass clef pitches: f2|g2|a2|b2|c3|d3|e3|f3|g3|a3|b3\nDurations: 1n|2n|4n|8n")
+            sys.exit("engraver: the basic CL sheet music engraving tool nobody asked for\n\nUsage:\n    engraver new (treble|bass) (4/4|3/4|2/4|12/8|9/8|6/8|3/8) (C|F|Bb|Eb|Ab|Db|Gb|Cb|G|D|A|E|B|F#|C#) <number_of_bars>\n    engraver new\n    engraver -h | --help\n    engraver --version\n\nOptions:\n    -h --help      Show this screen.\n    --version      Show version.\n\nAdding objects:\n    Notes:\n        <pitch> <duration> [.]\n    Rests:\n        r <duration> [.]\n    Accidentals:\n        (f|s|n) <pitch>\n\nTreble clef pitches: d4|e4|f4|g4|a4|b4|c5|d5|e5|f5|g5\nBass clef pitches: f2|g2|a2|b2|c3|d3|e3|f3|g3|a3|b3\nDurations: 1n|2n|4n|8n")
         elif sys.argv[1] == "--version":
             sys.exit(importlib.metadata.version("engraver"))
         elif len(sys.argv) < 6:
@@ -114,8 +114,13 @@ def main():
             clef = None # bad input, make sure we ask again
 
     # time signature
+    twofour = ["     XXX    ","----X---X---","       XX   ","-----XX-----","    XXXXX   ","------------","        X   ","------X-X---","    XXXXXX  ","--------X---","        X   "]
     threefour = ["    XXXX    ", "--------X---", "     XXX    ", "--------X---", "    XXXX    ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
     fourfour = ["        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
+    threeeight = ["     XXXX   ","---------X--","      XXX   ","---------X--","     XXXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
+    sixeight = ["     XXXX   ","----X-------","    X XXX   ","----XX---X--","     XXXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
+    nineeight = ["      XXX   ","-----X---X--","      XXXX  ","---------X--","      XXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
+    twelveeight = ["  X   XXX   ","-XX--X---X--","  X    XX   ","--X---XX----"," XXX XXXXX  ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
     timesigwidth = len(threefour[0])
     mytimesig = None
     while mytimesig == None:
@@ -125,6 +130,16 @@ def main():
             mytimesig = fourfour
         elif timesig == "3/4":
             mytimesig = threefour
+        elif timesig == "2/4":
+            mytimesig = twofour
+        elif timesig == "3/8":
+            mytimesig = threeeight
+        elif timesig == "6/8":
+            mytimesig = sixeight
+        elif timesig == "9/8":
+            mytimesig = nineeight
+        elif timesig == "12/8":
+            mytimesig = twelveeight
         elif timesig == "q":
             sys.exit()
         else:
@@ -169,7 +184,8 @@ def main():
 
     # base score lines
     notewidth = 8
-    slotsperbar = int(timesig[0]) * 2 # for now, number of eighth notes per bar
+    timesignums = timesig.split("/")
+    slotsperbar = int(timesignums[0]) * 8 // int(timesignums[1]) # for now, number of eighth notes per bar
     barwidth = notewidth * slotsperbar
     bars = 0
     while bars == 0:
