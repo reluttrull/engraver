@@ -114,8 +114,10 @@ def main():
             clef = None # bad input, make sure we ask again
 
     # time signature
+    twofour = ["     XXX    ","----X---X---","       XX   ","-----XX-----","    XXXXX   ","------------","        X   ","------X-X---","    XXXXXX  ","--------X---","        X   "]
     threefour = ["    XXXX    ", "--------X---", "     XXX    ", "--------X---", "    XXXX    ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
     fourfour = ["        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
+    sixeight = ["     XXXX   ","----X-------","    X XXX   ","----XX---X--","     XXXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
     timesigwidth = len(threefour[0])
     mytimesig = None
     while mytimesig == None:
@@ -125,6 +127,10 @@ def main():
             mytimesig = fourfour
         elif timesig == "3/4":
             mytimesig = threefour
+        elif timesig == "2/4":
+            mytimesig = twofour
+        elif timesig == "6/8":
+            mytimesig = sixeight
         elif timesig == "q":
             sys.exit()
         else:
@@ -169,7 +175,8 @@ def main():
 
     # base score lines
     notewidth = 8
-    slotsperbar = int(timesig[0]) * 2 # for now, number of eighth notes per bar
+    timesignums = timesig.split("/")
+    slotsperbar = int(timesignums[0]) * 8 // int(timesignums[1]) # for now, number of eighth notes per bar
     barwidth = notewidth * slotsperbar
     bars = 0
     while bars == 0:
