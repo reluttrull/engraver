@@ -86,7 +86,7 @@ def main():
     barinput = None
     if len(sys.argv) > 1:
         if sys.argv[1] in ["-h", "--help"]: # show help screen
-            sys.exit("engraver: the basic CL sheet music engraving tool nobody asked for\n\nUsage:\n    engraver new (treble|bass) (4/4|3/4) (C|F|Bb|Eb|Ab|Db|Gb|Cb|G|D|A|E|B|F#|C#) <number_of_bars>\n	engraver new\n	engraver -h | --help\n	engraver --version\n\nOptions:\n	-h --help      Show this screen.\n	--version      Show version.\n\nAdding objects:\n    Notes:\n		<pitch> <duration> [.]\n    Rests:\n        r <duration> [.]\n    Accidentals:\n        (f|s|n) <pitch>\n\nTreble clef pitches = d4|e4|f4|g4|a4|b4|c5|d5|e5|f5|g5\nBass clef pitches = f2|g2|a2|b2|c3|d3|e3|f3|g3|a3|b3\nDurations: 1n|2n|4n|8n")
+            sys.exit("engraver: the basic CL sheet music engraving tool nobody asked for\n\nUsage:\n    engraver new (treble|bass) (4/4|3/4) (C|F|Bb|Eb|Ab|Db|Gb|Cb|G|D|A|E|B|F#|C#) <number_of_bars>\n    engraver new\n    engraver -h | --help\n    engraver --version\n\nOptions:\n    -h --help      Show this screen.\n    --version      Show version.\n\nAdding objects:\n    Notes:\n        <pitch> <duration> [.]\n    Rests:\n        r <duration> [.]\n    Accidentals:\n        (f|s|n) <pitch>\n\nTreble clef pitches: d4|e4|f4|g4|a4|b4|c5|d5|e5|f5|g5\nBass clef pitches: f2|g2|a2|b2|c3|d3|e3|f3|g3|a3|b3\nDurations: 1n|2n|4n|8n")
         elif sys.argv[1] == "--version":
             sys.exit(importlib.metadata.version("engraver"))
         elif len(sys.argv) < 6:
@@ -187,6 +187,7 @@ def main():
     score = [outsidespaces, lines, spaces, lines, spaces, lines, spaces, lines, spaces, lines, outsidespaces]
     score = [a + b + c + d for a, b, c, d in zip(myclef, mytimesig, mykeysig, score)]
 
+    os.system('cls' if os.name == 'nt' else 'clear')
     for line in score:
         print(line)
     next = ""
@@ -201,12 +202,14 @@ def main():
     
     commandstack = []
     # object add section - loops until bars are full or user quit
-    while next != "q" and xpointer < len(score[0]):
+    while xpointer < len(score[0]):
         next = input("Add object? (e.g. g4 8n) q to quit: ")
         nextls = next.split()
         spacingmult = 1
         dotspace = False
-        if nextls[0] in notes: # contains note info
+        if next == "q":
+            sys.exit()
+        elif nextls[0] in notes: # contains note info
             if len(nextls) < 2:
                 print("No duration info, try again")
                 continue
