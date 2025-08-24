@@ -78,6 +78,22 @@ def addflagfornoteat(score, x, y):
     score[y+step] = score[y+step][:x+dir] + flag + score[y+step][x+dir+1:]
     return score
 
+def clearandprintscore(score, lf, lall):
+    os.system('cls' if os.name == 'nt' else 'clear')
+    for m in range(len(score)):
+        printbar(score[m], m, lf, lall)
+
+def printbar(measure, num, lf, lall):
+    if num == 0:
+        print(str(num+1))
+        for l in range(len(measure)):
+            print(lf[l] + measure[l])
+    else:
+        print("\n\n\n" + str(num+1))
+        for l in range(len(measure)):
+            print(lall[l] + measure[l])
+    return measure
+
 def main():
     # sys.argv = ["engraver", "--version"] # for debugging
     clef = None 
@@ -197,75 +213,102 @@ def main():
             bars = int(barinput)
         else:
             barinput = None # bad input, make sure we ask again
-    outsidespaces = ((" " * (barwidth-1) + " ") * bars) + "\r" 
-    spaces = ((" " * (barwidth-1) + "|") * bars) + "\r" 
-    lines = (("-" * (barwidth-1) + "|") * bars) + "\r"
-    score = [outsidespaces, lines, spaces, lines, spaces, lines, spaces, lines, spaces, lines, outsidespaces]
-    score = [a + b + c + d for a, b, c, d in zip(myclef, mytimesig, mykeysig, score)]
+    outsidespaces = (" " * (barwidth-1) + " ") + "\r" 
+    spaces = (" " * (barwidth-1) + "︱") + "\r" 
+    lines = ("-" * (barwidth-1) + "︱") + "\r"
+    def onebar():
+        return [outsidespaces, lines, spaces, lines, spaces, lines, spaces, lines, spaces, lines, outsidespaces]
+    score = []
+    for i in range(bars):
+        score.append(onebar())
+    leftfirstlineblob = [a + b + c for a, b, c in zip(myclef, mytimesig, mykeysig)]
+    leftothersblob = [a + c for a, c in zip(myclef, mykeysig)]
 
-    os.system('cls' if os.name == 'nt' else 'clear')
-    for line in score:
-        print(line)
+    clearandprintscore(score, leftfirstlineblob, leftothersblob)
+    
     next = ""
     durations = ["8n", "4n", "2n", "1n"]
     treblenotes = ["g5", "f5", "e5", "d5", "c5", "b4", "a4", "g4", "f4", "e4", "d4"]
     bassnotes = ["b3", "a3", "g3", "f3", "e3", "d3", "c3", "b2", "a2", "g2", "f2"]
-    xpointer = clefwidth + timesigwidth + keysigwidth + 2
+    xpointer = 2
     if clef == "treble":
         notes = treblenotes
     elif clef == "bass":
         notes = bassnotes
     
     commandstack = []
+    barnum = 0
     # object add section - loops until bars are full or user quit
-    while xpointer < len(score[0]):
-        next = input("Add object? (e.g. g4 8n) q to quit: ")
-        nextls = next.split()
-        spacingmult = 1
-        dotspace = False
-        if next == "q":
-            sys.exit()
-        elif nextls[0] in notes: # contains note info
-            if len(nextls) < 2:
-                print("No duration info, try again")
-                continue
-            if len(nextls) > 2 and nextls[2] == ".": # dotted note
-                dotspace = True
-            score = addnoteat(score, xpointer, notes.index(nextls[0]), nextls[1], dotspace)
-            commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
-            spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
-            xpointer += notewidth * spacingmult
-        elif nextls[0] == "r": # contains rest info
-            if len(nextls) < 2 or nextls[1] not in durations:
-                print("rest needs duration, try again")
-                continue
-            else:
-                if len(nextls) > 2 and nextls[2] == ".": # dotted rest
+    while barnum < bars: 
+        os.system('cls' if os.name == 'nt' else 'clear')
+        printbar(score[barnum], barnum, leftfirstlineblob, leftothersblob)
+        
+        while xpointer < len(score[barnum][0]): # until current bar full
+            next = input("Add object? (e.g. g4 8n) q to quit: ")
+            nextls = next.split()
+            spacingmult = 1
+            dotspace = False
+            if next == "q":
+                sys.exit()
+            elif nextls[0] in notes: # contains note info
+                if len(nextls) < 2:
+                    print("No duration info, try again")
+                    continue
+                if len(nextls) > 2 and nextls[2] == ".": # dotted note
                     dotspace = True
-                score = addrestat(score, xpointer, nextls[1], dotspace)
+                score[barnum] = addnoteat(score[barnum], xpointer, notes.index(nextls[0]), nextls[1], dotspace)
                 commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
                 spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
                 xpointer += notewidth * spacingmult
-        elif nextls[0] in symbols: # contains accidental info
-            if len(nextls) < 2 or nextls[1] not in notes:
-                print("accidental needs pitch, try again")
-                continue
+            elif nextls[0] == "r": # contains rest info
+                if len(nextls) < 2 or nextls[1] not in durations:
+                    print("rest needs duration, try again")
+                    continue
+                else:
+                    if len(nextls) > 2 and nextls[2] == ".": # dotted rest
+                        dotspace = True
+                    score[barnum] = addrestat(score[barnum], xpointer, nextls[1], dotspace)
+                    commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
+                    spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
+                    xpointer += notewidth * spacingmult
+            elif nextls[0] in symbols: # contains accidental info
+                if len(nextls) < 2 or nextls[1] not in notes:
+                    print("accidental needs pitch, try again")
+                    continue
+                else:
+                    score[barnum] = addobjectat(score[barnum], xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
+                    commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
+            elif nextls[0] == "d": # delete last object added
+                lastcommand = commandstack.pop()
+                xpointer = lastcommand[-1]
+                commandhead = lastcommand[0]
+                deleteatx = xpointer
+                if commandhead in ["s", "f", "n"]: deleteatx -= 2
+                score[barnum] = clearobjectat(score[barnum], deleteatx, notewidth)
             else:
-                score = addobjectat(score, xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
-                commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
-        elif nextls[0] == "d": # delete last object added
-            lastcommand = commandstack.pop()
-            xpointer = lastcommand[-1]
-            commandhead = lastcommand[0]
-            deleteatx = xpointer
-            if commandhead in ["s", "f", "n"]: deleteatx -= 2
-            score = clearobjectat(score, deleteatx, notewidth)
+                print("input not valid, double-check and try again")
+                continue
+            
+            os.system('cls' if os.name == 'nt' else 'clear')
+            printbar(score[barnum], barnum, leftfirstlineblob, leftothersblob)
+        moveon = None
+        while moveon == None:
+            moveoninput = input("Move on to next bar, or redo bar " + str(barnum+1) + "? (next | redo) q to quit:")
+            if moveoninput == "q":
+                sys.exit()
+            elif moveoninput == "next":
+                moveon = True
+            elif moveoninput == "redo":
+                moveon = False
+            else:
+                print("invalid input, please type 'next', 'redo', or 'q':")
+        if moveon:
+            barnum += 1
+            xpointer = 2
         else:
-            print("input not valid, double-check and try again")
-            continue
-        os.system('cls' if os.name == 'nt' else 'clear')
-        for line in score:
-            print(line)
+            score[barnum] = onebar()
+            xpointer = 2
+    clearandprintscore(score, leftfirstlineblob, leftothersblob)
     sys.exit()
     # print(commandstack) # for debugging
 # main() # for debugging
