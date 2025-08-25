@@ -2,7 +2,10 @@ Still in active development!
 
 Current package at: https://test.pypi.org/project/engraver/
 
-![engraver](https://github.com/user-attachments/assets/53b32a26-97e0-4b5e-bfea-aa7dae733cf7)
+![engraver1](https://github.com/user-attachments/assets/75cf59bb-4904-4983-9e7b-9730b607947a)
+
+![engraver2](https://github.com/user-attachments/assets/3cc06b6e-a8d6-4f03-a0cf-6b5fec73fad5)
+
 ```
 engraver: the basic CL sheet music engraving tool nobody asked for
 
