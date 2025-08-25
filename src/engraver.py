@@ -1,9 +1,10 @@
 import sys
 import os 
+import subprocess
+import platform
 import importlib.metadata
 import tkinter as tk
 from tkinter import filedialog
-from tkinter import messagebox
 
 def addobjectat(score, x, y, obj):
     score[y] = score[y][:x] + obj + score[y][x+1:]
@@ -111,10 +112,21 @@ def savescore(text):
             with open(filename, 'w', encoding='utf-8') as file:
                 file.write(text)
             print("file saved as " + filename + "!")
+            print("*** your score will look best in Notepad++ ***")
+            return filename
         except Exception as e:
             print(f"an error occurred: {e}")
+            return
     else:
         print("save canceled")
+        return
+def openfile(fp):
+    if platform.system() == "Windows":
+        subprocess.run(["notepad", fp])
+    elif platform.system() == "Darwin":  # mac
+        subprocess.run(["open", fp])
+    else:  # linux
+        subprocess.run(["xdg-open", fp])
 
 def main():
     # sys.argv = ["engraver", "--version"] # for debugging
@@ -336,21 +348,18 @@ def main():
     print(finalscoretext)
     finalcmd = None
     while finalcmd == None:
-        cmdinput = input("Save or print? (save | print) q to quit:")
+        cmdinput = input("Save as text file? (save) q to quit: ")
         if cmdinput == "q":
             sys.exit()
-        elif cmdinput in ["save", "print"]:
+        elif cmdinput == "save":
             finalcmd = cmdinput
         else:
-            print("invalid input, please type 'save', 'print', or 'q':")
+            print("invalid input, please type 'save' or 'q': ")
     if finalcmd == "save":
-        savescore(finalscoretext)
-        # save
-    elif finalcmd == "print":
-        pass
-        # print
+        filepath = savescore(finalscoretext)
+        openfile(filepath)
     sys.exit()
     # print(commandstack) # for debugging
-main() # for debugging
+# main() # for debugging
 if __name__ == "engraver":
     main()
