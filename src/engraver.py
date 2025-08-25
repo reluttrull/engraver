@@ -1,6 +1,9 @@
 import sys
 import os 
 import importlib.metadata
+import tkinter as tk
+from tkinter import filedialog
+from tkinter import messagebox
 
 def addobjectat(score, x, y, obj):
     score[y] = score[y][:x] + obj + score[y][x+1:]
@@ -17,10 +20,8 @@ def clearobjectat(score, x, w):
 def addnoteat(score, x, y, dur, hasdot):
     if dur in ["4n", "8n"]:
         notehead = "●"
-    elif dur == "2n":
+    elif dur in ["1n", "2n"]:
         notehead = "○"
-    elif dur == "1n":
-        notehead = "🞇"
     score = addobjectat(score, x, y, notehead)
     # stems
     if dur in ["8n", "4n", "2n"]:
@@ -78,21 +79,42 @@ def addflagfornoteat(score, x, y):
     score[y+step] = score[y+step][:x+dir] + flag + score[y+step][x+dir+1:]
     return score
 
-def clearandprintscore(score, lf, lall):
+def clearscreen():
     os.system('cls' if os.name == 'nt' else 'clear')
-    for m in range(len(score)):
-        printbar(score[m], m, lf, lall)
 
-def printbar(measure, num, lf, lall):
+def getscoretext(score, lf, lall):
+    text = ""
+    for m in range(len(score)):
+        text += getbartext(score[m], m, lf, lall)
+    return text
+
+def getbartext(measure, num, lf, lall):
+    text = ""
     if num == 0:
-        print(str(num+1))
+        text += str(num+1) + "\n"
         for l in range(len(measure)):
-            print(lf[l] + measure[l])
+            text += lf[l] + measure[l] + "\n"
     else:
-        print("\n\n\n" + str(num+1))
+        text += "\n\n\n" + str(num+1) + "\n"
         for l in range(len(measure)):
-            print(lall[l] + measure[l])
-    return measure
+            text += lall[l] + measure[l] + "\n"
+    return text
+
+def savescore(text):
+    root = tk.Tk()
+    root.withdraw()  # hide tinkter window
+    
+    filename = filedialog.asksaveasfilename(defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+
+    if filename:
+        try:
+            with open(filename, 'w', encoding='utf-8') as file:
+                file.write(text)
+            print("file saved as " + filename + "!")
+        except Exception as e:
+            print(f"an error occurred: {e}")
+    else:
+        print("save canceled")
 
 def main():
     # sys.argv = ["engraver", "--version"] # for debugging
@@ -224,7 +246,8 @@ def main():
     leftfirstlineblob = [a + b + c for a, b, c in zip(myclef, mytimesig, mykeysig)]
     leftothersblob = [a + c for a, c in zip(myclef, mykeysig)]
 
-    clearandprintscore(score, leftfirstlineblob, leftothersblob)
+    clearscreen()
+    print(getscoretext(score, leftfirstlineblob, leftothersblob))
     
     next = ""
     durations = ["8n", "4n", "2n", "1n"]
@@ -240,8 +263,8 @@ def main():
     barnum = 0
     # object add section - loops until bars are full or user quit
     while barnum < bars: 
-        os.system('cls' if os.name == 'nt' else 'clear')
-        printbar(score[barnum], barnum, leftfirstlineblob, leftothersblob)
+        clearscreen()
+        print(getbartext(score[barnum], barnum, leftfirstlineblob, leftothersblob))
         
         while xpointer < len(score[barnum][0]): # until current bar full
             next = input("Add object? (e.g. g4 8n) q to quit: ")
@@ -289,8 +312,8 @@ def main():
                 print("input not valid, double-check and try again")
                 continue
             
-            os.system('cls' if os.name == 'nt' else 'clear')
-            printbar(score[barnum], barnum, leftfirstlineblob, leftothersblob)
+            clearscreen()
+            print(getbartext(score[barnum], barnum, leftfirstlineblob, leftothersblob))
         moveon = None
         while moveon == None:
             moveoninput = input("Move on to next bar, or redo bar " + str(barnum+1) + "? (next | redo) q to quit:")
@@ -308,9 +331,26 @@ def main():
         else:
             score[barnum] = onebar()
             xpointer = 2
-    clearandprintscore(score, leftfirstlineblob, leftothersblob)
+    clearscreen()
+    finalscoretext = getscoretext(score, leftfirstlineblob, leftothersblob)
+    print(finalscoretext)
+    finalcmd = None
+    while finalcmd == None:
+        cmdinput = input("Save or print? (save | print) q to quit:")
+        if cmdinput == "q":
+            sys.exit()
+        elif cmdinput in ["save", "print"]:
+            finalcmd = cmdinput
+        else:
+            print("invalid input, please type 'save', 'print', or 'q':")
+    if finalcmd == "save":
+        savescore(finalscoretext)
+        # save
+    elif finalcmd == "print":
+        pass
+        # print
     sys.exit()
     # print(commandstack) # for debugging
-# main() # for debugging
+main() # for debugging
 if __name__ == "engraver":
     main()
