@@ -3,7 +3,6 @@ import os
 import subprocess
 import platform
 import math
-import traceback
 import importlib.metadata
 import tkinter as tk
 from tkinter import filedialog
@@ -131,8 +130,7 @@ def addslur(score, nhcoords):
     return score
 
 def clearscreen():
-    pass
-    # os.system('cls' if os.name == 'nt' else 'clear')
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def getscoretext(score, lf, lall):
     text = ""
@@ -432,6 +430,6 @@ def main():
         openfile(filepath)
     sys.exit()
     # print(commandstack) # for debugging
-main() # for debugging
+# main() # for debugging
 if __name__ == "engraver":
     main()
