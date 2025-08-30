@@ -2,6 +2,7 @@ import sys
 import os 
 import subprocess
 import platform
+import traceback
 import importlib.metadata
 import tkinter as tk
 from tkinter import filedialog
@@ -78,6 +79,32 @@ def addflagfornoteat(score, x, y):
         step = -3
         dir = 2
     score[y+step] = score[y+step][:x+dir] + flag + score[y+step][x+dir+1:]
+    return score
+
+def flipnoteat(score, x, y):
+    step = 0
+    if y < 5: # stem down
+        step = 1
+    else: # stem up
+        step = -1
+    #undo original stem
+    for i in range(1,4):
+        thisline = y + (i * step)
+        score[thisline] = score[thisline][:x+1] + (" " if thisline % 2 == 0 else "-") + score[thisline][x+2:]
+    # add new stem
+    step *= -1
+    for i in range(1,4):
+        thisline = y + (i * step)
+        if thisline >= 0 and thisline < len(score):
+            score[thisline] = score[thisline][:x+1] + "|" + score[thisline][x+2:]
+    return score
+
+def addslur(score, nhcoords):
+    avgdir = sum([nh[1] for nh in nhcoords]) / len(nhcoords) >= 5 # true is up, false is down
+    for nh in nhcoords:
+        if (nh[1] >= 5) != avgdir:
+            score = flipnoteat(score, nh[0], nh[1])
+    # still need to add slur on other side
     return score
 
 def clearscreen():
@@ -326,9 +353,28 @@ def main():
             
             clearscreen()
             print(getbartext(score[barnum], barnum, leftfirstlineblob, leftothersblob))
+        adddecorationsdone = False
+        while not adddecorationsdone:
+            adddecorationsinput = input("Add slurs to bar " + str(barnum+1) + "? (e.g. slur 1 4 | next) q to quit: ")
+            adddecorations = adddecorationsinput.split()
+            if adddecorations[0] == "slur":
+                notesinbar = [[cmd[-1], notes.index(cmd[0])] for cmd in commandstack if cmd[0] in notes]
+                try:
+                    slurstart = int(adddecorations[1])-1
+                    slurend = int(adddecorations[2])-1
+                    if 0 <= slurstart < len(notesinbar):
+                        score[barnum] = addslur(score[barnum], notesinbar[slurstart:slurend+1])
+                    clearscreen()
+                    print(getbartext(score[barnum], barnum, leftfirstlineblob, leftothersblob))
+                except Exception as e:
+                    print(e)
+            elif adddecorations[0] == "next":
+                adddecorationsdone = True
+            elif adddecorations[0] == "q":
+                sys.exit()  
         moveon = None
         while moveon == None:
-            moveoninput = input("Move on to next bar, or redo bar " + str(barnum+1) + "? (next | redo) q to quit:")
+            moveoninput = input("Move on to next bar, or redo bar " + str(barnum+1) + "? (next | redo) q to quit: ")
             if moveoninput == "q":
                 sys.exit()
             elif moveoninput == "next":
@@ -336,7 +382,7 @@ def main():
             elif moveoninput == "redo":
                 moveon = False
             else:
-                print("invalid input, please type 'next', 'redo', or 'q':")
+                print("invalid input, please type 'next', 'redo', or 'q': ")
         if moveon:
             barnum += 1
             xpointer = 2
@@ -360,6 +406,6 @@ def main():
         openfile(filepath)
     sys.exit()
     # print(commandstack) # for debugging
-# main() # for debugging
+main() # for debugging
 if __name__ == "engraver":
     main()
