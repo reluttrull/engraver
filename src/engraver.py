@@ -2,13 +2,15 @@ import sys
 import os 
 import subprocess
 import platform
+import math
 import traceback
 import importlib.metadata
 import tkinter as tk
 from tkinter import filedialog
 
 def addobjectat(score, x, y, obj):
-    score[y] = score[y][:x] + obj + score[y][x+1:]
+    if y >= 0 and y < len(score):
+        score[y] = score[y][:x] + obj + score[y][x+1:]
     return score
 
 def clearobjectat(score, x, w):
@@ -104,11 +106,33 @@ def addslur(score, nhcoords):
     for nh in nhcoords:
         if (nh[1] >= 5) != avgdir:
             score = flipnoteat(score, nh[0], nh[1])
-    # still need to add slur on other side
+    # add slur on other side
+    obj = ""
+    if nhcoords[0][1] > nhcoords[-1][1] and avgdir: #notes go up, slur underneath
+        obj = "◞"
+    elif nhcoords[0][1] < nhcoords[-1][1] and avgdir: #notes go down, slur underneath
+        obj = "◟"
+    elif nhcoords[0][1] > nhcoords[-1][1] and not avgdir: #notes go up, slur above
+        obj = "◜"
+    else:
+        obj = "◝"
+    step = 1 if avgdir else -1
+    a = 0
+    b = 1
+    while b < len(nhcoords):
+        pointa = nhcoords[a]
+        pointb = nhcoords[b]
+        for x in range(nhcoords[a][0], nhcoords[b][0]):
+            xfrac = ((x - pointa[0]) / (pointb[0] - pointa[0]))
+            thisy = math.floor((pointb[1] - pointa[1]) * xfrac) + pointa[1] + step
+            score = addobjectat(score, x, thisy, obj)
+        a += 1
+        b += 1
     return score
 
 def clearscreen():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    pass
+    # os.system('cls' if os.name == 'nt' else 'clear')
 
 def getscoretext(score, lf, lall):
     text = ""
@@ -353,6 +377,7 @@ def main():
             
             clearscreen()
             print(getbartext(score[barnum], barnum, leftfirstlineblob, leftothersblob))
+        # decorations section (slurs, etc.)
         adddecorationsdone = False
         while not adddecorationsdone:
             adddecorationsinput = input("Add slurs to bar " + str(barnum+1) + "? (e.g. slur 1 4 | next) q to quit: ")
@@ -372,6 +397,7 @@ def main():
                 adddecorationsdone = True
             elif adddecorations[0] == "q":
                 sys.exit()  
+        # confirm done with measure
         moveon = None
         while moveon == None:
             moveoninput = input("Move on to next bar, or redo bar " + str(barnum+1) + "? (next | redo) q to quit: ")
