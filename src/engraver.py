@@ -449,6 +449,6 @@ def main():
         openfile(filepath)
     sys.exit()
     # print(commandstack) # for debugging
-main() # for debugging
+# main() # for debugging
 if __name__ == "engraver":
     main()
