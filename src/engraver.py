@@ -7,36 +7,39 @@ import importlib.metadata
 import tkinter as tk
 from tkinter import filedialog
 
-def addobjectat(score, x, y, obj):
-    if y >= 0 and y < len(score):
-        score[y] = score[y][:x] + obj + score[y][x+1:]
-    return score
+def addobjectat(bar, x, y, obj):
+    if y >= 0 and y < len(bar):
+        bar[y] = bar[y][:x] + obj + bar[y][x+1:]
+    return bar
 
-def clearobjectat(score, x, w):
-    for y in range(len(score)):
+# reverts all objects vertically at x index through x+w index
+def clearobjectat(bar, x, w):
+    for y in range(len(bar)):
         replacement = ""
         if y % 2 == 0: replacement = " " * w
         else: replacement = "-" * w
-        score[y] = score[y][:x] + replacement + score[y][x+w:]
-    return score
+        bar[y] = bar[y][:x] + replacement + bar[y][x+w:]
+    return bar
 
-def addnoteat(score, x, y, dur, hasdot):
+def addnoteat(bar, x, y, dur, hasdot):
+    # add notehead
     if dur in ["4n", "8n"]:
         notehead = "●"
     elif dur in ["1n", "2n"]:
         notehead = "○"
-    score = addobjectat(score, x, y, notehead)
-    # stems
+    bar = addobjectat(bar, x, y, notehead)
+    # add stem
     if dur in ["8n", "4n", "2n"]:
-        score = addstemfornoteat(score, x, y)
-    # flags
+        bar = addstemfornoteat(bar, x, y)
+    # add flag
     if dur == "8n":
-        score = addflagfornoteat(score, x, y)
-    if hasdot: # dotted note
-        score = addobjectat(score, x+1, y, ".")
-    return score
+        bar = addflagfornoteat(bar, x, y)
+    # add dot
+    if hasdot:
+        bar = addobjectat(bar, x+1, y, ".")
+    return bar
 
-def addrestat(score, x, dur, hasdot):
+def addrestat(bar, x, dur, hasdot):
     # eighth and quarter note rests above middle line
     if dur == "8n":
         obj = "𝄾"
@@ -48,63 +51,81 @@ def addrestat(score, x, dur, hasdot):
     elif dur == "2n": 
         obj = "𝄼"
         y = 5
-    # whole notes below middle line
+    # whole rests below middle line
     elif dur == "1n":
         obj = "𝄻"
         y = 6
     else: return
-    score = addobjectat(score, x, y, obj)
-    if hasdot: return addobjectat(score, x+1, y, ".")
-    else: return score
+    bar = addobjectat(bar, x, y, obj)
+    if hasdot: return addobjectat(bar, x+1, y, ".")
+    else: return bar
     
 
-def addstemfornoteat(score, x, y):
+def addstemfornoteat(bar, x, y):
     step = 0
-    if y < 5: # stem down
+    if y < 5: # note above middle of staff => stem down
         step = 1
-    else: # stem up
+        offset = -1
+    else: # note on or below middle of staff => stem up
         step = -1
+        offset = 1
     for i in range(1,4):
         thisline = y + (i * step)
-        score[thisline] = score[thisline][:x+1] + "|" + score[thisline][x+2:]
-    return score
+        bar[thisline] = bar[thisline][:x+offset] + "|" + bar[thisline][x+offset+1:]
+    return bar
         
-def addflagfornoteat(score, x, y):
-    step = 0
-    dir = 0
-    flag = "╮"
-    if y < 5: # left
+def addflagfornoteat(bar, x, y):
+    if y < 5: # for stems down
+        flag = "◜"
         step = 3
         dir = 0
-    else: # right
+    else: # for stems up
+        flag = "╮"
         step = -3
         dir = 2
-    score[y+step] = score[y+step][:x+dir] + flag + score[y+step][x+dir+1:]
-    return score
+    bar[y+step] = bar[y+step][:x+dir] + flag + bar[y+step][x+dir+1:]
+    return bar
 
-def flipnoteat(score, x, y):
+def flipnoteat(bar, x, y):
     step = 0
-    if y < 5: # stem down
+    if y < 5: # stem was down
         step = 1
-    else: # stem up
+        flagx = x
+        flagy = y + 3
+        flag = bar[flagy][flagx] 
+        newflagx = x+2
+        newflagy = y-3
+    else: # stem was up
         step = -1
-    #undo original stem
+        flagx = x+2
+        flagy = y-3
+        flag = bar[flagy][flagx]
+        newflagx = x 
+        newflagy = y+3
+    # undo original stem
+    offset = -1 if y < 5 else 1
     for i in range(1,4):
         thisline = y + (i * step)
-        score[thisline] = score[thisline][:x+1] + (" " if thisline % 2 == 0 else "-") + score[thisline][x+2:]
+        bar[thisline] = bar[thisline][:x+offset] + (" " if thisline % 2 == 0 else "-") + bar[thisline][x+offset+1:]
+    # undo and flip original flag
+    if flag not in [" ", "-"]:
+        bar[flagy] = bar[flagy][:flagx] + (" " if flagy % 2 == 0 else "-") + bar[flagy][flagx+1:]
+        if 0 <= (newflagy) < len(bar):
+            bar = addobjectat(bar, newflagx, newflagy, "◜" if flag == "╮" else "╮")
     # add new stem
     step *= -1
+    offset *= -1
     for i in range(1,4):
         thisline = y + (i * step)
-        if thisline >= 0 and thisline < len(score):
-            score[thisline] = score[thisline][:x+1] + "|" + score[thisline][x+2:]
-    return score
+        if thisline >= 0 and thisline < len(bar):
+            bar[thisline] = bar[thisline][:x+offset] + "|" + bar[thisline][x+offset+1:]
+    return bar
 
-def addslur(score, nhcoords):
+def addslur(bar, nhcoords):
     avgdir = sum([nh[1] for nh in nhcoords]) / len(nhcoords) >= 5 # true is up, false is down
     for nh in nhcoords:
         if (nh[1] >= 5) != avgdir:
-            score = flipnoteat(score, nh[0], nh[1])
+            bar = flipnoteat(bar, nh[0], nh[1])
     # add slur on other side
     obj = ""
     if nhcoords[0][1] > nhcoords[-1][1] and avgdir: #notes go up, slur underneath
@@ -124,10 +145,10 @@ def addslur(score, nhcoords):
         for x in range(nhcoords[a][0], nhcoords[b][0]):
             xfrac = ((x - pointa[0]) / (pointb[0] - pointa[0]))
             thisy = math.floor((pointb[1] - pointa[1]) * xfrac) + pointa[1] + step
-            score = addobjectat(score, x, thisy, obj)
+            bar = addobjectat(bar, x, thisy, obj)
         a += 1
         b += 1
-    return score
+    return bar
 
 def clearscreen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -138,16 +159,16 @@ def getscoretext(score, lf, lall):
         text += getbartext(score[m], m, lf, lall)
     return text
 
-def getbartext(measure, num, lf, lall):
+def getbartext(bar, num, lf, lall):
     text = ""
     if num == 0:
         text += str(num+1) + "\n"
-        for l in range(len(measure)):
-            text += lf[l] + measure[l] + "\n"
+        for l in range(len(bar)):
+            text += lf[l] + bar[l] + "\n"
     else:
         text += "\n\n\n" + str(num+1) + "\n"
-        for l in range(len(measure)):
-            text += lall[l] + measure[l] + "\n"
+        for l in range(len(bar)):
+            text += lall[l] + bar[l] + "\n"
     return text
 
 def savescore(text):
@@ -198,7 +219,6 @@ def main():
     # clef
     treble = ["           ^        ", "|----------%+-------", "|         +:+       ", "|----------+#-------", "|        =@*        ", "|-------%#**--------", "|      ++:##*%)     ", "|------(*:=-:-+-----", "|        -==*:      ", "|--------:=.=-------", "        #*:+        "]
     bass = ["                    ", "--------------------", "     @@@@@@@  @     ", "----@@@@--@@@@@@----", "     @@@@ @@@@@     ", "----------@@@@@@----", "         @@@        ", "-------@@@----------", "    @@@             ", "--------------------", "                    "]
-    clefwidth = len(treble[0])
     myclef = None
     while myclef == None:     
         if not clef:
@@ -220,7 +240,6 @@ def main():
     sixeight = ["     XXXX   ","----X-------","    X XXX   ","----XX---X--","     XXXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
     nineeight = ["      XXX   ","-----X---X--","      XXXX  ","---------X--","      XXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
     twelveeight = ["  X   XXX   ","-XX--X---X--","  X    XX   ","--X---XX----"," XXX XXXXX  ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
-    timesigwidth = len(threefour[0])
     mytimesig = None
     while mytimesig == None:
         if not timesig: 
@@ -368,7 +387,7 @@ def main():
                 commandhead = lastcommand[0]
                 deleteatx = xpointer
                 if commandhead in ["s", "f", "n"]: deleteatx -= 2
-                score[barnum] = clearobjectat(score[barnum], deleteatx, notewidth)
+                score[barnum] = clearobjectat(score[barnum], deleteatx-1, notewidth+1)
             else:
                 print("input not valid, double-check and try again")
                 continue
@@ -430,6 +449,6 @@ def main():
         openfile(filepath)
     sys.exit()
     # print(commandstack) # for debugging
-# main() # for debugging
+main() # for debugging
 if __name__ == "engraver":
     main()
