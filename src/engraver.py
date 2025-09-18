@@ -7,36 +7,43 @@ import importlib.metadata
 import tkinter as tk
 from tkinter import filedialog
 
-def addobjectat(score, x, y, obj):
-    if y >= 0 and y < len(score):
-        score[y] = score[y][:x] + obj + score[y][x+1:]
-    return score
+from constants import TREBLECLEF, BASSCLEF, DURATIONS, TREBLENOTES, BASSNOTES
+from constants import TWOFOURSIG, THREEFOURSIG, FOURFOURSIG, THREEEIGHTSIG, SIXEIGHTSIG, NINEEIGHTSIG, TWELVEEIGHTSIG
+from constants import SYMBOLS, FLATINDICESTREBLE, FLATINDICESBASS, SHARPINDICESTREBLE, SHARPINDICESBASS, FLATKEYS, SHARPKEYS
 
-def clearobjectat(score, x, w):
-    for y in range(len(score)):
+def addobjectat(bar, x, y, obj):
+    if y >= 0 and y < len(bar):
+        bar[y] = bar[y][:x] + obj + bar[y][x+1:]
+    return bar
+
+# reverts all objects vertically at x index through x+w index
+def clearobjectat(bar, x, w):
+    for y in range(len(bar)):
         replacement = ""
         if y % 2 == 0: replacement = " " * w
         else: replacement = "-" * w
-        score[y] = score[y][:x] + replacement + score[y][x+w:]
-    return score
+        bar[y] = bar[y][:x] + replacement + bar[y][x+w:]
+    return bar
 
-def addnoteat(score, x, y, dur, hasdot):
+def addnoteat(bar, x, y, dur, hasdot):
+    # add notehead
     if dur in ["4n", "8n"]:
         notehead = "●"
     elif dur in ["1n", "2n"]:
         notehead = "○"
-    score = addobjectat(score, x, y, notehead)
-    # stems
+    bar = addobjectat(bar, x, y, notehead)
+    # add stem
     if dur in ["8n", "4n", "2n"]:
-        score = addstemfornoteat(score, x, y)
-    # flags
+        bar = addstemfornoteat(bar, x, y)
+    # add flag
     if dur == "8n":
-        score = addflagfornoteat(score, x, y)
-    if hasdot: # dotted note
-        score = addobjectat(score, x+1, y, ".")
-    return score
+        bar = addflagfornoteat(bar, x, y)
+    # add dot
+    if hasdot:
+        bar = addobjectat(bar, x+1, y, ".")
+    return bar
 
-def addrestat(score, x, dur, hasdot):
+def addrestat(bar, x, dur, hasdot):
     # eighth and quarter note rests above middle line
     if dur == "8n":
         obj = "𝄾"
@@ -48,63 +55,81 @@ def addrestat(score, x, dur, hasdot):
     elif dur == "2n": 
         obj = "𝄼"
         y = 5
-    # whole notes below middle line
+    # whole rests below middle line
     elif dur == "1n":
         obj = "𝄻"
         y = 6
     else: return
-    score = addobjectat(score, x, y, obj)
-    if hasdot: return addobjectat(score, x+1, y, ".")
-    else: return score
+    bar = addobjectat(bar, x, y, obj)
+    if hasdot: return addobjectat(bar, x+1, y, ".")
+    else: return bar
     
 
-def addstemfornoteat(score, x, y):
+def addstemfornoteat(bar, x, y):
     step = 0
-    if y < 5: # stem down
+    if y < 5: # note above middle of staff => stem down
         step = 1
-    else: # stem up
+        offset = -1
+    else: # note on or below middle of staff => stem up
         step = -1
+        offset = 1
     for i in range(1,4):
         thisline = y + (i * step)
-        score[thisline] = score[thisline][:x+1] + "|" + score[thisline][x+2:]
-    return score
+        bar[thisline] = bar[thisline][:x+offset] + "|" + bar[thisline][x+offset+1:]
+    return bar
         
-def addflagfornoteat(score, x, y):
-    step = 0
-    dir = 0
-    flag = "╮"
-    if y < 5: # left
+def addflagfornoteat(bar, x, y):
+    if y < 5: # for stems down
+        flag = "◜"
         step = 3
         dir = 0
-    else: # right
+    else: # for stems up
+        flag = "╮"
         step = -3
         dir = 2
-    score[y+step] = score[y+step][:x+dir] + flag + score[y+step][x+dir+1:]
-    return score
+    bar[y+step] = bar[y+step][:x+dir] + flag + bar[y+step][x+dir+1:]
+    return bar
 
-def flipnoteat(score, x, y):
+def flipnoteat(bar, x, y):
     step = 0
-    if y < 5: # stem down
+    if y < 5: # stem was down
         step = 1
-    else: # stem up
+        flagx = x
+        flagy = y + 3
+        flag = bar[flagy][flagx] 
+        newflagx = x+2
+        newflagy = y-3
+    else: # stem was up
         step = -1
-    #undo original stem
+        flagx = x+2
+        flagy = y-3
+        flag = bar[flagy][flagx]
+        newflagx = x 
+        newflagy = y+3
+    # undo original stem
+    offset = -1 if y < 5 else 1
     for i in range(1,4):
         thisline = y + (i * step)
-        score[thisline] = score[thisline][:x+1] + (" " if thisline % 2 == 0 else "-") + score[thisline][x+2:]
+        bar[thisline] = bar[thisline][:x+offset] + (" " if thisline % 2 == 0 else "-") + bar[thisline][x+offset+1:]
+    # undo and flip original flag
+    if flag not in [" ", "-"]:
+        bar[flagy] = bar[flagy][:flagx] + (" " if flagy % 2 == 0 else "-") + bar[flagy][flagx+1:]
+        if 0 <= (newflagy) < len(bar):
+            bar = addobjectat(bar, newflagx, newflagy, "◜" if flag == "╮" else "╮")
     # add new stem
     step *= -1
+    offset *= -1
     for i in range(1,4):
         thisline = y + (i * step)
-        if thisline >= 0 and thisline < len(score):
-            score[thisline] = score[thisline][:x+1] + "|" + score[thisline][x+2:]
-    return score
+        if thisline >= 0 and thisline < len(bar):
+            bar[thisline] = bar[thisline][:x+offset] + "|" + bar[thisline][x+offset+1:]
+    return bar
 
-def addslur(score, nhcoords):
+def addslur(bar, nhcoords):
     avgdir = sum([nh[1] for nh in nhcoords]) / len(nhcoords) >= 5 # true is up, false is down
     for nh in nhcoords:
         if (nh[1] >= 5) != avgdir:
-            score = flipnoteat(score, nh[0], nh[1])
+            bar = flipnoteat(bar, nh[0], nh[1])
     # add slur on other side
     obj = ""
     if nhcoords[0][1] > nhcoords[-1][1] and avgdir: #notes go up, slur underneath
@@ -124,10 +149,10 @@ def addslur(score, nhcoords):
         for x in range(nhcoords[a][0], nhcoords[b][0]):
             xfrac = ((x - pointa[0]) / (pointb[0] - pointa[0]))
             thisy = math.floor((pointb[1] - pointa[1]) * xfrac) + pointa[1] + step
-            score = addobjectat(score, x, thisy, obj)
+            bar = addobjectat(bar, x, thisy, obj)
         a += 1
         b += 1
-    return score
+    return bar
 
 def clearscreen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -138,16 +163,16 @@ def getscoretext(score, lf, lall):
         text += getbartext(score[m], m, lf, lall)
     return text
 
-def getbartext(measure, num, lf, lall):
+def getbartext(bar, num, lf, lall):
     text = ""
     if num == 0:
         text += str(num+1) + "\n"
-        for l in range(len(measure)):
-            text += lf[l] + measure[l] + "\n"
+        for l in range(len(bar)):
+            text += lf[l] + bar[l] + "\n"
     else:
         text += "\n\n\n" + str(num+1) + "\n"
-        for l in range(len(measure)):
-            text += lall[l] + measure[l] + "\n"
+        for l in range(len(bar)):
+            text += lall[l] + bar[l] + "\n"
     return text
 
 def savescore(text):
@@ -195,72 +220,54 @@ def main():
             timesig = sys.argv[3]
             keysig = sys.argv[4]
             barinput = sys.argv[5]
-    # clef
-    treble = ["           ^        ", "|----------%+-------", "|         +:+       ", "|----------+#-------", "|        =@*        ", "|-------%#**--------", "|      ++:##*%)     ", "|------(*:=-:-+-----", "|        -==*:      ", "|--------:=.=-------", "        #*:+        "]
-    bass = ["                    ", "--------------------", "     @@@@@@@  @     ", "----@@@@--@@@@@@----", "     @@@@ @@@@@     ", "----------@@@@@@----", "         @@@        ", "-------@@@----------", "    @@@             ", "--------------------", "                    "]
-    clefwidth = len(treble[0])
+# clef
     myclef = None
     while myclef == None:     
         if not clef:
             clef = input("Which clef? (treble or bass, q to quit): ")
         if clef == "treble":
-            myclef = treble
+            myclef = TREBLECLEF
         elif clef == "bass":
-            myclef = bass
+            myclef = BASSCLEF
         elif clef == "q":
             sys.exit()
         else:
             clef = None # bad input, make sure we ask again
 
-    # time signature
-    twofour = ["     XXX    ","----X---X---","       XX   ","-----XX-----","    XXXXX   ","------------","        X   ","------X-X---","    XXXXXX  ","--------X---","        X   "]
-    threefour = ["    XXXX    ", "--------X---", "     XXX    ", "--------X---", "    XXXX    ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
-    fourfour = ["        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   ", "------------", "        X   ", "------X-X---", "    XXXXXX  ", "--------X---", "        X   "]
-    threeeight = ["     XXXX   ","---------X--","      XXX   ","---------X--","     XXXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
-    sixeight = ["     XXXX   ","----X-------","    X XXX   ","----XX---X--","     XXXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
-    nineeight = ["      XXX   ","-----X---X--","      XXXX  ","---------X--","      XXX   ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
-    twelveeight = ["  X   XXX   ","-XX--X---X--","  X    XX   ","--X---XX----"," XXX XXXXX  ","------------","     XXX    ","----X---X---","     XXX    ","----X---X---","    XXXXX   "]
-    timesigwidth = len(threefour[0])
+# time signature
     mytimesig = None
     while mytimesig == None:
         if not timesig: 
             timesig = input("Which time signature? (4/4 or 3/4, q to quit): ")
         if timesig == "4/4":
-            mytimesig = fourfour
+            mytimesig = FOURFOURSIG
         elif timesig == "3/4":
-            mytimesig = threefour
+            mytimesig = THREEFOURSIG
         elif timesig == "2/4":
-            mytimesig = twofour
+            mytimesig = TWOFOURSIG
         elif timesig == "3/8":
-            mytimesig = threeeight
+            mytimesig = THREEEIGHTSIG
         elif timesig == "6/8":
-            mytimesig = sixeight
+            mytimesig = SIXEIGHTSIG
         elif timesig == "9/8":
-            mytimesig = nineeight
+            mytimesig = NINEEIGHTSIG
         elif timesig == "12/8":
-            mytimesig = twelveeight
+            mytimesig = TWELVEEIGHTSIG
         elif timesig == "q":
             sys.exit()
         else:
             timesig = None # bad input, make sure we ask again
         
-    # key signature
-    symbols = { "s": "♯", "f": "♭", "n": "♮" }
-    flatindicestreble = [5, 2, 6, 3, 7, 4, 8]
-    flatindicesbass = [7, 4, 8, 5, 2, 6, 3]
-    sharpindicestreble = [1, 4, 0, 3, 6, 2, 5]
-    sharpindicesbass = [3, 6, 2, 5, 1, 4, 7]
-    flatkeys = { "F":1, "Bb":2, "Eb":3, "Ab":4, "Db":5, "Gb":6, "Cb":7 }
-    sharpkeys = { "G":1, "D":2, "A":3, "E":4, "B":5, "F#":6, "C#":7 }
+# key signature
     keysigwidth = 0
     while keysigwidth == 0:
         if not keysig:
             keysig = input("Which key signature? (e.g. Eb, q to quit): ")
-        if keysig in flatkeys:
-            myflats = (flatindicestreble if clef == "treble" else flatindicesbass)[0:flatkeys[keysig]] 
+        if keysig in FLATKEYS:
+            myflats = (FLATINDICESTREBLE if clef == "treble" else FLATINDICESBASS)[0:FLATKEYS[keysig]] 
             keysigwidth = len(myflats) * 3
-        elif keysig in sharpkeys:
-            mysharps = (sharpindicestreble if clef == "treble" else sharpindicesbass)[0:sharpkeys[keysig]]
+        elif keysig in SHARPKEYS:
+            mysharps = (SHARPINDICESTREBLE if clef == "treble" else SHARPINDICESBASS)[0:SHARPKEYS[keysig]]
             keysigwidth = len(mysharps) * 3
         elif keysig == "C":
             keysigwidth = 1
@@ -272,16 +279,16 @@ def main():
     kslines = "-" * keysigwidth
     mykeysig = [ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces, kslines, ksspaces]
     kspointer = 1
-    if keysig in flatkeys:
+    if keysig in FLATKEYS:
         for i in myflats:
-            mykeysig = addobjectat(mykeysig, kspointer, i, symbols["f"])
+            mykeysig = addobjectat(mykeysig, kspointer, i, SYMBOLS["f"])
             kspointer += 3
-    elif keysig in sharpkeys:
+    elif keysig in SHARPKEYS:
         for i in mysharps:
-            mykeysig = addobjectat(mykeysig, kspointer, i, symbols["s"])
+            mykeysig = addobjectat(mykeysig, kspointer, i, SYMBOLS["s"])
             kspointer += 3
 
-    # base score lines
+    # set up base score lines
     notewidth = 8
     timesignums = timesig.split("/")
     slotsperbar = int(timesignums[0]) * 8 // int(timesignums[1]) # for now, number of eighth notes per bar
@@ -311,14 +318,11 @@ def main():
     print(getscoretext(score, leftfirstlineblob, leftothersblob))
     
     next = ""
-    durations = ["8n", "4n", "2n", "1n"]
-    treblenotes = ["g5", "f5", "e5", "d5", "c5", "b4", "a4", "g4", "f4", "e4", "d4"]
-    bassnotes = ["b3", "a3", "g3", "f3", "e3", "d3", "c3", "b2", "a2", "g2", "f2"]
     xpointer = 2
     if clef == "treble":
-        notes = treblenotes
+        notes = TREBLENOTES
     elif clef == "bass":
-        notes = bassnotes
+        notes = BASSNOTES
     
     commandstack = []
     barnum = 0
@@ -332,8 +336,10 @@ def main():
             nextls = next.split()
             spacingmult = 1
             dotspace = False
+# quit
             if next == "q":
                 sys.exit()
+# add note
             elif nextls[0] in notes: # contains note info
                 if len(nextls) < 2:
                     print("No duration info, try again")
@@ -344,8 +350,9 @@ def main():
                 commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
                 spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
                 xpointer += notewidth * spacingmult
+# add rest
             elif nextls[0] == "r": # contains rest info
-                if len(nextls) < 2 or nextls[1] not in durations:
+                if len(nextls) < 2 or nextls[1] not in DURATIONS:
                     print("rest needs duration, try again")
                     continue
                 else:
@@ -355,20 +362,22 @@ def main():
                     commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
                     spacingmult = int(8 * (1.5 if dotspace else 1) // int(nextls[1][0]))
                     xpointer += notewidth * spacingmult
-            elif nextls[0] in symbols: # contains accidental info
+# add accidental
+            elif nextls[0] in SYMBOLS: # contains accidental info
                 if len(nextls) < 2 or nextls[1] not in notes:
                     print("accidental needs pitch, try again")
                     continue
                 else:
-                    score[barnum] = addobjectat(score[barnum], xpointer-2, notes.index(nextls[1]), symbols[nextls[0]])
+                    score[barnum] = addobjectat(score[barnum], xpointer-2, notes.index(nextls[1]), SYMBOLS[nextls[0]])
                     commandstack.append([x for x in nextls]+[xpointer]) # add command and x to stack
+# delete (backspace) object
             elif nextls[0] == "d": # delete last object added
                 lastcommand = commandstack.pop()
                 xpointer = lastcommand[-1]
                 commandhead = lastcommand[0]
                 deleteatx = xpointer
                 if commandhead in ["s", "f", "n"]: deleteatx -= 2
-                score[barnum] = clearobjectat(score[barnum], deleteatx, notewidth)
+                score[barnum] = clearobjectat(score[barnum], deleteatx-1, notewidth+1)
             else:
                 print("input not valid, double-check and try again")
                 continue
@@ -380,6 +389,7 @@ def main():
         while not adddecorationsdone:
             adddecorationsinput = input("Add slurs to bar " + str(barnum+1) + "? (e.g. slur 1 4 | next) q to quit: ")
             adddecorations = adddecorationsinput.split()
+# add slur
             if adddecorations[0] == "slur":
                 notesinbar = [[cmd[-1], notes.index(cmd[0])] for cmd in commandstack if cmd[0] in notes]
                 try:
